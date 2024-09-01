@@ -1,80 +1,112 @@
-import socket
+from fastapi import FastAPI
 import database
 import cifrari
 import re
-import ssl
-from base64 import b64decode
-import certifi
+from base64 import b64decode, b64encode
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization, hashes
+import datetime
+import textwrap
+from pydantic import BaseModel
 
 
 
-def server():
-    host = socket.gethostname()
-    print(host)
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain(certfile="public-cert.pem", keyfile="private-key.pem")
+Chiavi = database.Chiavi()
+app = FastAPI()
 
-# a TCP/IP socket
-    sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sk.bind(("192.168.178.22", 21402))
-    sk.listen(5)
-
-    Chiavi = database.Chiavi()
-    with context.wrap_socket(sk, server_side=True) as ssock:
-        try:
-            while True:
-                cod, indirizzo = ssock.accept()
-                while True:
-                    ricevuti = cod.recv(4096)
-                    if not ricevuti:
-                        break
-                    ricevuti = ricevuti.decode().strip()
-                    messaggio = ""
-                    if ricevuti.startswith("chiave: "):
-                        chiave = ricevuti.removeprefix("chiave: ")
-                        Chiavi.salvachiave(chiave,indirizzo)
-                    else:
-                        cifratoAES, ChiaveCifrata = ricevuti.split("chiave: ") 
-                        chiaveAES = cifrari.decifraRSA(b64decode(ChiaveCifrata))
-                        dati = cifrari.decifra(cifratoAES, chiaveAES)
-                        if dati.startswith("Reg: "):
-                            dati = dati.removeprefix("Reg: ")
-                            Prefisso,Numero,password = dati.split(" ")
-                            messaggio = Chiavi.registra(Prefisso,Numero, password)
-                        elif dati.startswith("Login: "):
-                            dati = dati.removeprefix("Login: ").strip()
-                            dati = re.sub("\s\s+", " ", dati)
-                            print(dati)
-                            Prefisso,Numero,password = dati.split(" ")
-                            messaggio = Chiavi.login(Prefisso,Numero, password)
-                        elif dati.startswith("Cerca: "):
-                            Numero = dati.removeprefix("Cerca: ").strip()
-                            messaggio = Chiavi.Cerca(Numero)
-                        elif dati.startswith("Reg_id: "):
-                            dati = dati.removeprefix("Reg_id: ")
-                            Prefisso,Numero,firebaseid = dati.split(" ")
-                            messaggio = Chiavi.registra_id(Prefisso,Numero, firebaseid)
-                        elif dati.startswith("chiave: "):
-                            dati = dati.removeprefix("chiave: ").strip()
-                            id1,id2 = dati.split(" ")
-                            messaggio = Chiavi.salvachiave(id1,id2)
-                        elif dati.startswith("Cerca_id: "):
-                            id = dati.removeprefix("Cerca_id: ").strip()
-                            messaggio = Chiavi.Cerca_id(id)
-                        else:
-                            messaggio = dati
-                        #xmessaggio = cifrari.cifraAES(messaggio, chiaveAES)
-                        messaggio = messaggio + "\n"
-                        print("risposta:")
-                        print(messaggio)
-                        cod.send(messaggio.encode())
-        except Exception as e:
-            print(e)
-            server()
-
-
-
-
+class MESSAGGIO_ARRIVO(BaseModel):
+    cifratoAES: str
+    ChiaveCifrata: str
     
+class AUTENTICAZIONE(BaseModel):
+    cifratoAES: str
+    ChiaveCifrata: str
+    API_KEY: str
 
-server()
+
+@app.post("/registrazione")
+async def registrazione(mess : MESSAGGIO_ARRIVO):
+    try:
+        chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
+        dati = cifrari.decifra(mess.cifratoAES, chiaveAES)
+        Prefisso,Numero,password = dati.split(" ")
+        messaggio = Chiavi.registra(Prefisso,Numero, password)
+        messaggio = cifrari.cifraAES(messaggio, chiaveAES)
+        return {"risposta": messaggio}
+    except Exception as e:
+        return {"risposta": "Errore"}
+
+
+
+@app.post("/login")
+async def login(login : MESSAGGIO_ARRIVO):
+    try:
+        chiaveAES = cifrari.decifraRSA(b64decode(login.ChiaveCifrata))
+        dati = cifrari.decifra(login.cifratoAES, chiaveAES)
+        dati = re.sub("\s\s+", " ", dati)
+        Prefisso,Numero,password = dati.split(" ")
+        messaggio = Chiavi.login(Prefisso,Numero, password)
+        print(messaggio)
+        messaggio = cifrari.cifraAES(messaggio, chiaveAES)
+        return {"risposta": messaggio}
+    except Exception as e:
+            return {"risposta": "Errore"}
+
+
+
+
+@app.post("/cerca_numero")
+async def cerca(mess: MESSAGGIO_ARRIVO):
+    try:
+        chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
+        numero = cifrari.decifra(mess.cifratoAES, chiaveAES)
+        messaggio = Chiavi.Cerca(numero)
+        messaggio = cifrari.cifraAES(messaggio, chiaveAES)
+        return {"risposta" : messaggio}
+    except Exception as e:
+        return {"risposta": "Errore"}
+
+
+
+
+@app.post("/reg_id")
+async def reg_id(mess: MESSAGGIO_ARRIVO):
+    try:
+        chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
+        dati = cifrari.decifra(mess.cifratoAES, chiaveAES)
+        Prefisso,Numero,firebaseid = dati.split(" ")
+        messaggio = Chiavi.registra_id(Prefisso,Numero, firebaseid)
+        messaggio = cifrari.cifraAES(messaggio, chiaveAES)
+        return {"risposta" : messaggio} 
+    except Exception as e:
+        return {"risposta": "Errore"}
+
+
+
+@app.post("/chiave")
+async def chiave(mess: AUTENTICAZIONE):
+    try:
+        chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
+        dati = cifrari.decifra(mess.cifratoAES, chiaveAES)
+        id1,id2 = dati.split(" ")
+        messaggio = Chiavi.salvachiave(id1,id2, mess.API_KEY)
+        messaggio = cifrari.cifraAES(messaggio, chiaveAES)
+        return {"risposta": messaggio}
+    except Exception as e:
+        return {"risposta": "Errore"}
+
+
+
+
+@app.post("/cerca_id")
+async def cerca_id(mess: MESSAGGIO_ARRIVO):
+    try:
+        chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
+        id = cifrari.decifra(mess.cifratoAES, chiaveAES)
+        messaggio = Chiavi.Cerca_id(id)
+        messaggio = cifrari.cifraAES(messaggio, chiaveAES)
+        return {"risposta": messaggio}
+    except Exception as e:
+        return {"risposta": "Errore"}
+
+
