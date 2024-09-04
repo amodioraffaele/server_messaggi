@@ -88,8 +88,8 @@ async def chiave(mess: AUTENTICAZIONE):
     try:
         chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
         dati = cifrari.decifra(mess.cifratoAES, chiaveAES)
-        id1,id2 = dati.split(" ")
-        messaggio = Chiavi.salvachiave(id1,id2, mess.API_KEY)
+        id1,id2, API_KEY = dati.split(" ")
+        messaggio = Chiavi.salvachiave(id1,id2, API_KEY)
         messaggio = cifrari.cifraAES(messaggio, chiaveAES)
         return {"risposta": messaggio}
     except Exception as e:
