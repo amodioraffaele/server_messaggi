@@ -65,8 +65,8 @@ async def reg_id(mess: MESSAGGIO_ARRIVO):
     try:
         chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
         dati = cifrari.decifra(mess.cifratoAES, chiaveAES)
-        Prefisso,Numero,firebaseid = dati.split(" ")
-        messaggio = Database.registra_id(Prefisso,Numero, firebaseid)
+        Prefisso,Numero,firebaseid, password = dati.split(" ")
+        messaggio = Database.registra_id(Prefisso,Numero, firebaseid,password)
         messaggio = cifrari.cifraAES(messaggio, chiaveAES)
         return {"risposta" : messaggio} 
     except Exception as e:
