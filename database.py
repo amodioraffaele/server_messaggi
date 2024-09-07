@@ -99,16 +99,7 @@ class Database():
                     n = self.cursor.fetchone()
                     if n[0] == 0:
                         id_esiste = False   
-                api_esiste = True
                 API = secrets.token_urlsafe(18)
-                while api_esiste:
-                    query = "SELECT count(*) FROM user WHERE API = %s"
-                    self.cursor.execute(query,(API,))
-                    n = self.cursor.fetchone()
-                    if n[0] == 0:
-                        api_esiste = False   
-                    else:
-                        API = secrets.token_urlsafe(18)
                 API = cifraRSA(API)
                 query = "INSERT INTO user (Prefisso, Numero, Password, id, API) VALUES (%s,%s, %s, %s, %s)"
                 self.cursor.execute(query, (Prefisso,Numero, password, id, API))
