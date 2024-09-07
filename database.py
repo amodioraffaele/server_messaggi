@@ -148,10 +148,9 @@ class Database():
     
 
     def registra_id(self,prefisso,numero,firebaseid, password):
-        query = "SELECT FirebaseID,  FROM user WHERE Prefisso = %s AND Numero = %s"
+        query = "SELECT FirebaseID, password FROM user WHERE Prefisso = %s AND Numero = %s"
         self.cursor.execute(query, (prefisso, numero))
         result = self.cursor.fetchone()
-        print(result)
         if result == None:
             query = "UPDATE user SET FirebaseID = %s WHERE Prefisso = %s AND Numero = %s"
             self.cursor.execute(query, (firebaseid, prefisso, numero))
@@ -168,7 +167,7 @@ class Database():
                 self.cursor.execute(query, (numero,prefisso))
                 result = self.cursor.fetchone()
                 logging.info(f"Richiesta API key da {prefisso}{numero}")
-                m = m + " API: " + decifraRSA(result[0].encode("latin-1")).decode("latin-1")
+                m = "Successo API: " + decifraRSA(result[0].encode("latin-1")).decode("latin-1")
                 return m
             logging.error(f"Tentativo di registrare id {firebaseid} per {prefisso}{numero} già registrato")
             return "Id già registrato"
