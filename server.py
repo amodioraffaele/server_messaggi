@@ -51,7 +51,6 @@ async def cerca(mess: MESSAGGIO_ARRIVO):
         chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
         numero = cifrari.decifra(mess.cifratoAES, chiaveAES)
         messaggio = Database.Cerca(numero)
-        print(messaggio)
         messaggio = cifrari.cifraAES(messaggio, chiaveAES)
         return {"risposta" : messaggio}
     except Exception as e:
