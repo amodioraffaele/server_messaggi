@@ -101,7 +101,17 @@ async def cerca_id(mess: MESSAGGIO_ARRIVO):
 
 
 
-
+@app.post("/cambia_password")
+async def cambia_password(mess: MESSAGGIO_ARRIVO):
+    try:
+        chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
+        dati = cifrari.decifra(mess.cifratoAES, chiaveAES)
+        Numero, password, nuovapassword = dati.split(" ")
+        messaggio = Database.cambia_password(Numero, password, nuovapassword)
+        messaggio = cifrari.cifraAES(messaggio, chiaveAES)
+        return {"risposta": messaggio}
+    except Exception as e:
+        return {"risposta": "Errore"}
 
 
 
