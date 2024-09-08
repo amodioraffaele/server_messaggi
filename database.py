@@ -162,3 +162,17 @@ class Database():
                 return m
             logging.error(f"Tentativo di registrare id {firebaseid} per {prefisso}{numero} già registrato")
             return "Id già registrato"
+            
+     def cambia_password(self, numero, password, nuova_password):
+        query = "SELECT password FROM user WHERE Numero = %s"
+        self.cursor.execute(query, (numero,))
+        result = self.cursor.fetchone()
+        if bcrypt.checkpw(password.encode(), result[0].encode()):
+            query = "UPDATE user SET Password = %s WHERE Numero = %s"
+            self.cursor.execute(query, (nuova_password, numero))
+            self.database.commit()
+            logging.info(f"Password cambiata per {numero}")
+            return "Successo"
+        else:
+            logging.error(f"Tentativo di cambiare password con password errata per {numero}")
+            return "Password errata"
