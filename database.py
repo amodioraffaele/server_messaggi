@@ -164,6 +164,11 @@ class Database():
             return "Id già registrato"
             
      def cambia_password(self, numero, password, nuova_password):
+        try:
+                Numero = int(Numero)
+        except:
+                logging.error(f"Tentativo di cambiare password ad un numero non valido: {Numero}")
+                return "Numero non valido" 
         query = "SELECT password FROM user WHERE Numero = %s"
         self.cursor.execute(query, (numero,))
         result = self.cursor.fetchone()
