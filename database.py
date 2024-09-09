@@ -142,7 +142,7 @@ class Database():
         query = "SELECT FirebaseID, password FROM user WHERE Prefisso = %s AND Numero = %s"
         self.cursor.execute(query, (prefisso, numero))
         result = self.cursor.fetchone()
-        if result == None:
+        if result[0] == None:
             query = "UPDATE user SET FirebaseID = %s WHERE Prefisso = %s AND Numero = %s"
             self.cursor.execute(query, (firebaseid, prefisso, numero))
             self.database.commit()
