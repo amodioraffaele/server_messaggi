@@ -21,6 +21,8 @@ async def registrazione(mess : MESSAGGIO_ARRIVO):
             chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
             dati = cifrari.decifra(mess.cifratoAES, chiaveAES)
             Prefisso,Numero,password = dati.split(" ")
+            if len(Numero) != 10:
+                return {"risposta": "Numero non valido"}
             messaggio = Database.registra(Prefisso,Numero, password)
             messaggio = cifrari.cifraAES(messaggio, chiaveAES)
             return {"risposta": messaggio}
@@ -36,6 +38,8 @@ async def login(login : MESSAGGIO_ARRIVO):
         chiaveAES = cifrari.decifraRSA(b64decode(login.ChiaveCifrata))
         dati = cifrari.decifra(login.cifratoAES, chiaveAES)
         Prefisso,Numero,password = dati.split(" ")
+        if len(Numero) != 10:
+            return {"risposta": "Numero non valido"}
         messaggio = Database.login(Prefisso,Numero, password)
         messaggio = cifrari.cifraAES(messaggio, chiaveAES)
         return {"risposta": messaggio}
@@ -50,6 +54,8 @@ async def cerca(mess: MESSAGGIO_ARRIVO):
     try:
         chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
         numero = cifrari.decifra(mess.cifratoAES, chiaveAES)
+        if len(numero) != 10:
+            return {"risposta": "Numero non valido"}
         messaggio = Database.Cerca(numero)
         messaggio = cifrari.cifraAES(messaggio, chiaveAES)
         return {"risposta" : messaggio}
@@ -65,6 +71,8 @@ async def reg_id(mess: MESSAGGIO_ARRIVO):
         chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
         dati = cifrari.decifra(mess.cifratoAES, chiaveAES)
         Prefisso,Numero,firebaseid, password = dati.split(" ")
+        if len(Numero) != 10:
+            return {"risposta": "Numero non valido"}
         messaggio = Database.registra_id(Prefisso,Numero, firebaseid,password)
         messaggio = cifrari.cifraAES(messaggio, chiaveAES)
         return {"risposta" : messaggio} 
@@ -107,6 +115,8 @@ async def cambia_password(mess: MESSAGGIO_ARRIVO):
         chiaveAES = cifrari.decifraRSA(b64decode(mess.ChiaveCifrata))
         dati = cifrari.decifra(mess.cifratoAES, chiaveAES)
         Numero, password, nuovapassword = dati.split(" ")
+        if len(Numero) != 10:
+            return {"risposta": "Numero non valido"}
         messaggio = Database.cambia_password(Numero, password, nuovapassword)
         messaggio = cifrari.cifraAES(messaggio, chiaveAES)
         return {"risposta": messaggio}
